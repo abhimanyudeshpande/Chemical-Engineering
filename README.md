@@ -49,7 +49,8 @@ This reaction pattern appears in real-world systems including drug metabolism, i
 
 | File | Description |
 |------|-------------|
-| `batch_reactor_abc.py` | Main simulator: A → B → C with Euler vs Midpoint comparison |
+| `batch_reactor_abc.py` | Core simulator: A → B → C with Euler vs Midpoint comparison |
+| `batch_reactor_arrhenius.py` | Extension: same reaction with temperature-dependent rate constants via the Arrhenius equation |
 | `batch_reactor_ab.py` | Simpler A → B simulator used for timestep convergence analysis |
 
 ---
@@ -124,3 +125,37 @@ A key learning feature of this project is that you can directly observe the trad
 - **Mass balance** (A + B + C) stays constant at A₀ — a built-in sanity check
 
 If k2 >> k1, B barely accumulates and its peak is very small. If k1 >> k2, B builds up significantly before being consumed. Changing these rate constants in the config block lets you explore both regimes.
+
+---
+
+## Arrhenius Extension
+
+`batch_reactor_arrhenius.py` replaces the fixed k1 and k2 values with the Arrhenius equation:
+
+```
+k(T) = A * exp( -Ea / (R * T) )
+```
+
+Where **A** is the pre-exponential factor, **Ea** is the activation energy (J/mol), **R** is the gas constant (8.314 J/mol·K), and **T** is temperature in Kelvin. Rate constants are no longer manually set — they are calculated automatically from temperature.
+
+The config block lets you set a list of temperatures to compare. The simulator runs a full A → B → C simulation at each temperature and produces two plots:
+
+- **Plot 1** — concentration curves for all species at all temperatures on one graph, colored by temperature
+- **Plot 2** — two panels showing how peak [B] concentration and the time it occurs shift as temperature increases
+
+The key insight this reveals: because Ea2 > Ea1 in the default config, raising temperature speeds up B → C *more* than A → B. This means higher temperature actually reduces how much B accumulates — a real selectivity tradeoff that chemical engineers have to manage in practice.
+
+### Arrhenius Config Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `a1_factor` | Pre-exponential factor for A → B (1/s) | `1.0e6` |
+| `ea1_j_per_mol` | Activation energy for A → B (J/mol) | `50000` |
+| `a2_factor` | Pre-exponential factor for B → C (1/s) | `1.0e6` |
+| `ea2_j_per_mol` | Activation energy for B → C (J/mol) | `60000` |
+| `temperatures_k` | List of temperatures to simulate (K) | `[300, 320, 340, 360]` |
+
+Run it with:
+```bash
+python batch_reactor_arrhenius.py
+```
